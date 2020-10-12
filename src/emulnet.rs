@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use crate::params::Params;
+use std::collections::VecDeque;
 
 pub struct EmulNet {
     params: Params,
@@ -8,14 +8,17 @@ pub struct EmulNet {
 }
 
 impl EmulNet {
-
     /// Creates a new emulated network.
     ///
     /// # Arguments
     ///
     /// * `params` - Parameters for the emulated network.
     pub fn new(params: Params) -> EmulNet {
-        EmulNet {params, next_node_id: 0, message_buffer: vec![]}
+        EmulNet {
+            params,
+            next_node_id: 0,
+            message_buffer: vec![],
+        }
     }
 
     /// Initializes the emulated network structure with support for a new node.
