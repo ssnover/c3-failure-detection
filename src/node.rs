@@ -1,3 +1,5 @@
+use crate::log::Logger;
+
 pub struct Node {
     pub id: u8,
 }
@@ -7,5 +9,5 @@ impl Node {
         Node { id }
     }
 
-    pub fn run(&mut self, _current_time: u32) {}
+    pub fn run(&mut self, _current_time: u32, _logger: &mut Logger) {}
 }

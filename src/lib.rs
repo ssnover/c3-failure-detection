@@ -34,7 +34,7 @@ impl Application {
     pub fn run(&mut self) {
         for timestep in 0..self.params.total_runtime {
             for node in &mut self.nodes {
-                node.run(timestep)
+                node.run(timestep, &mut self.logger);
             }
 
             if timestep == 100 && self.params.insert_single_failure {
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_failures_with_message_drop() {
+    fn test_multiple_failures() {
         let mut builder = params::ParamsBuilder::new();
         builder
             .with_number_of_nodes(10)
@@ -136,8 +136,8 @@ mod tests {
         let mut app = Application::new(builder.build());
         app.run();
 
-        assert_eq!(app.nodes.len(), 9);
-        assert_eq!(app.failed_nodes.len(), 1);
+        assert_eq!(app.nodes.len(), 5);
+        assert_eq!(app.failed_nodes.len(), 5);
         assert_eq!(app.logger.count_join_events(), 10 * 10);
         assert_eq!(app.logger.count_failure_events(), 5*5 + 5);
     }

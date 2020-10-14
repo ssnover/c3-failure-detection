@@ -42,7 +42,7 @@ impl Logger {
         self.log_file
             .write_all(
                 format!(
-                    "{}: Node {} marked node {} as failed",
+                    "{}: Node {} marked node {} as failed\r\n",
                     timestep, failed_node_id, reporting_node_id
                 )
                 .as_bytes(),
