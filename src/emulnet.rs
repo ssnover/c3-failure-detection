@@ -1,4 +1,5 @@
 use crate::params::Params;
+use rand::prelude::*;
 use std::collections::VecDeque;
 
 pub struct EmulNet {
@@ -40,8 +41,13 @@ impl EmulNet {
     /// * `data` - The message.
     pub fn send(&mut self, src: u8, dest: u8, data: &Vec<u8>) {
         let dest = usize::from(dest);
+        let mut rng = rand::thread_rng();
         if dest < self.message_buffer.len() {
-            self.message_buffer[dest].push_back((src, data.clone()));
+            if !self.params.drop_messages
+                || (rng.gen::<f64>() > self.params.dropped_message_probability)
+            {
+                self.message_buffer[dest].push_back((src, data.clone()));
+            }
         }
     }
 
