@@ -8,7 +8,7 @@ use std::convert::TryInto;
 
 pub struct Application {
     params: params::Params,
-    _net: emulnet::EmulNet,
+    net: emulnet::EmulNet,
     nodes: Vec<node::Node>,
     failed_nodes: Vec<node::Node>,
     logger: log::Logger,
@@ -23,7 +23,7 @@ impl Application {
         }
         let app = Application {
             params,
-            _net: net,
+            net: net,
             nodes,
             failed_nodes: vec![],
             logger: log::Logger::new("debug.log").unwrap(),
@@ -31,12 +31,21 @@ impl Application {
         app
     }
 
+    /// Runs the emulation. Uses the parameters to run a number of timesteps
+    /// and during each timestep all running nodes are run once. When a node is
+    /// "failed" it simply is not run for any subsequent timesteps.
+    ///
+    /// The entire emulation is designed to be run in one thread.
     pub fn run(&mut self) {
         for timestep in 0..self.params.total_runtime {
+            // Run each node which has not failed
             for node in &mut self.nodes {
-                node.run(timestep, &mut self.logger);
+                node.run(timestep, &mut self.logger, &mut self.net);
             }
 
+            // It would be worth parameterizing the timestep at which failures
+            // occur, since it's possible to set the `total_runtime` to less
+            // than 100 in which case no failures would occur.
             if timestep == 100 && self.params.insert_single_failure {
                 // Move a random node to the failed node list
                 let mut rng = rand::thread_rng();
@@ -49,13 +58,16 @@ impl Application {
                             .unwrap(),
                     ),
                 );
-                // Log the failure for the node so the timestep is known
+                // Log the failure for the node so it's easier to calculate the
+                // number of expected failure events
                 self.logger.log_failure_event(
                     timestep,
                     random_node_id.try_into().unwrap(),
                     random_node_id.try_into().unwrap(),
                 );
             } else if timestep == 100 && self.params.insert_multiple_failures {
+                // In the multiple failure case, half of the nodes are marked
+                // as failed at a single timestep
                 let mut rng = rand::thread_rng();
                 let random_node_id = rng.gen_range(0, self.params.number_of_nodes / 2);
                 for id in random_node_id..(random_node_id + (self.params.number_of_nodes / 2)) {
@@ -67,6 +79,8 @@ impl Application {
                                 .unwrap(),
                         ),
                     );
+                    // This logs the failure for the node itself. Makes it
+                    // easier to count the number of expected events
                     self.logger.log_failure_event(
                         timestep,
                         id.try_into().unwrap(),
@@ -74,6 +88,9 @@ impl Application {
                     );
                 }
             }
+            // TODO: An interesting case not covered in the original assignment
+            // would be to check that nodes properly handled a re-joining node,
+            // i.e. move a node back to the running state after failing it.
         }
     }
 }
@@ -91,6 +108,7 @@ mod tests {
 
         assert_eq!(app.nodes.len(), 10);
         assert_eq!(app.failed_nodes.len(), 0);
+        // Assumes that the node logs an event for its own join
         assert_eq!(app.logger.count_join_events(), 10 * 10);
         assert_eq!(app.logger.count_failure_events(), 0);
     }
@@ -107,6 +125,8 @@ mod tests {
         assert_eq!(app.nodes.len(), 9);
         assert_eq!(app.failed_nodes.len(), 1);
         assert_eq!(app.logger.count_join_events(), 10 * 10);
+        // Assumes a failure event is logged by the node for itself (in this
+        // case, actually by the emulation)
         assert_eq!(app.logger.count_failure_events(), 10);
     }
 
@@ -139,6 +159,9 @@ mod tests {
         assert_eq!(app.nodes.len(), 5);
         assert_eq!(app.failed_nodes.len(), 5);
         assert_eq!(app.logger.count_join_events(), 10 * 10);
+        // Each remaining node (half) will log a failure event for each failed
+        // node (5 * 5) and each failed node will log a failure for itself
+        // (the emulator will do this)
         assert_eq!(app.logger.count_failure_events(), 5*5 + 5);
     }
 }

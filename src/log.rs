@@ -12,6 +12,10 @@ pub struct Logger {
 }
 
 impl Logger {
+    /// Creates a new logger.
+    ///
+    /// # Arguments
+    /// * `path` - The path to file at which to write log events.
     pub fn new<P: AsRef<std::path::Path>>(path: P) -> std::io::Result<Logger> {
         Ok(Logger {
             log_events: vec![],
@@ -19,6 +23,11 @@ impl Logger {
         })
     }
 
+    /// Logs the time at which a node joins.
+    ///
+    /// # Arguments
+    /// * `timestep` - The timestamp at which the event occurred
+    /// * `joined_node_id` - The id of the node that has joined the system
     pub fn log_join_event(&mut self, timestep: u32, joined_node_id: u8) {
         self.log_events.push((
             timestep,
@@ -31,6 +40,12 @@ impl Logger {
             .unwrap();
     }
 
+    /// Logs the time at which a node is detected as failed.
+    ///
+    /// # Arguments
+    /// * `timestep` - The timestamp at which the event occurred
+    /// * `failed_node_id` - The id of the node which appears to have failed
+    /// * `reporting_node_id` - The id of the node which has detected the failure
     pub fn log_failure_event(&mut self, timestep: u32, failed_node_id: u8, reporting_node_id: u8) {
         self.log_events.push((
             timestep,
@@ -50,6 +65,7 @@ impl Logger {
             .unwrap();
     }
 
+    /// Counts the number of join events which have been logged.
     pub fn count_join_events(&self) -> usize {
         self.log_events
             .iter()
@@ -60,6 +76,7 @@ impl Logger {
             .count()
     }
 
+    /// Counts the number of failure events which have been logged.
     pub fn count_failure_events(&self) -> usize {
         self.log_events
             .iter()
